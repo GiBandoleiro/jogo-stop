@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stop Digital</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Favicon (Ícone da Aba) -->
+    <link rel="icon" type="image/png" href="logoStop.png">
+
+    <style>
+        /* Estilo customizado para a fonte Poppins */
+        body {
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Remove o highlight azul ao tocar em botões no mobile */
+        }
+        /* Animação para a letra sorteada */
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in {
+            animation: pop-in 0.5s ease-out forwards;
+        }
+        /* Animação para a atualização de pontos */
+        @keyframes score-update {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
+        .animate-score-update {
+            animation: score-update 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full max-w-4xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-8">
+        
+        <!-- Cabeçalho e Reiniciar -->
+        <header class="flex justify-between items-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-cyan-400">Stop Digital</h1>
+            <button id="reset-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                Reiniciar Jogo
+            </button>
+        </header>
+
+        <!-- Configurações e Categorias -->
+        <section class="space-y-4">
+            <h2 class="text-xl font-semibold border-b-2 border-gray-700 pb-2">Configurações</h2>
+            <!-- Adicionar Categoria -->
+            <form id="add-category-form" class="relative w-full">
+                <input type="text" id="category-input" placeholder="Nova categoria..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition">
+                <button type="submit" class="absolute top-1/2 right-2 -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors p-1 rounded-full hover:bg-gray-600">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </form>
+            <!-- Lista de Categorias -->
+            <div id="category-list" class="flex flex-wrap gap-2 pt-2">
+                <!-- Cards de categoria serão injetados aqui -->
+            </div>
+        </section>
+
+        <!-- Área do Jogo -->
+        <section class="text-center space-y-6">
+            <button id="game-control-btn" class="w-full max-w-sm mx-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-lg">
+                Preparar Jogo
+            </button>
+            <div id="letter-display" class="mt-4 text-8xl md:text-9xl font-bold text-yellow-400 h-28 flex items-center justify-center">
+                 <button id="reveal-letter-btn" class="hidden text-gray-500 hover:text-white transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </button>
+                <span id="letter-text" class="hidden"></span>
+            </div>
+            <!-- Campos para digitar as respostas -->
+            <div id="game-inputs" class="text-left mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <!-- Inputs das categorias serão injetados aqui -->
+            </div>
+        </section>
+
+        <!-- Botão STOP -->
+        <section id="stop-section" class="text-center hidden">
+             <button id="stop-btn" class="w-full max-w-sm mx-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-2xl uppercase tracking-wider transition-transform transform hover:scale-105 shadow-lg">
+                Stop!
+            </button>
+        </section>
+
+        <!-- Placar -->
+        <section>
+            <h2 class="text-2xl font-semibold border-b-2 border-gray-700 pb-2 mb-4">Placar</h2>
+            <div id="scoreboard" class="space-y-4">
+                <!-- Pontuação do jogador será injetada aqui -->
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ELEMENTOS DO DOM
+            const addCategoryForm = document.getElementById('add-category-form');
+            const categoryInput = document.getElementById('category-input');
+            const categoryList = document.getElementById('category-list');
+            const gameControlBtn = document.getElementById('game-control-btn');
+            const letterDisplay = document.getElementById('letter-display');
+            const revealLetterBtn = document.getElementById('reveal-letter-btn');
+            const letterText = document.getElementById('letter-text');
+            const gameInputs = document.getElementById('game-inputs');
+            const stopBtn = document.getElementById('stop-btn');
+            const stopSection = document.getElementById('stop-section');
+            const scoreboard = document.getElementById('scoreboard');
+            const resetBtn = document.getElementById('reset-btn');
+
+            // ESTADO DO JOGO
+            let state = {
+                score: 0,
+                categories: ['Nome', 'Cidade', 'Fruta'],
+                availableLetters: [],
+                drawnLetters: [],
+                currentLetter: null,
+                gameState: 'ready' // ready -> prepared -> playing -> scoring
+            };
+            let roundPoints = {}; // Armazena os pontos da rodada atual: { 'Categoria': pontos }
+            
+            const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+            // FUNÇÕES DE RENDERIZAÇÃO
+            const renderCategories = () => {
+                categoryList.innerHTML = '';
+                state.categories.forEach(category => {
+                    const categoryEl = document.createElement('div');
+                    categoryEl.className = 'bg-gray-700 text-sm font-medium px-3 py-1 rounded-full flex items-center gap-2';
+                    categoryEl.innerHTML = `
+                        <span>${category}</span>
+                        <button data-category="${category}" class="remove-category-btn text-red-400 hover:text-red-600 transition">&times;</button>
+                    `;
+                    categoryList.appendChild(categoryEl);
+                });
+            };
+
+            const renderScoreboard = () => {
+                scoreboard.innerHTML = '';
+                const scoreEl = document.createElement('div');
+                scoreEl.className = 'bg-gray-700/50 p-4 rounded-lg flex items-center justify-start gap-3';
+                scoreEl.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg font-bold">Pontuação Total:</span>
+                        <span id="score-display" class="text-2xl font-bold text-yellow-400 transition-transform">${state.score}</span>
+                    </div>
+                `;
+                scoreboard.appendChild(scoreEl);
+                 const scoreDisplay = document.getElementById('score-display');
+                    scoreDisplay.classList.add('animate-score-update');
+                    setTimeout(() => scoreDisplay.classList.remove('animate-score-update'), 300);
+            };
+
+            const renderGameInputs = () => {
+                gameInputs.innerHTML = '';
+                state.categories.forEach(category => {
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'relative';
+                    inputGroup.dataset.category = category;
+                    inputGroup.innerHTML = `
+                        <label class="block text-gray-400 text-sm font-bold mb-2">${category}</label>
+                        <input type="text" class="category-input w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition pr-24">
+                        <div class="score-buttons-container absolute right-2 top-8 hidden">
+                           <button data-points="5" class="score-word-btn w-10 h-8 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-transform transform hover:scale-110">+5</button>
+                           <button data-points="10" class="score-word-btn w-10 h-8 rounded-md bg-green-600 hover:bg-green-500 text-white font-bold text-sm transition-transform transform hover:scale-110 ml-1">+10</button>
+                        </div>
+                    `;
+                    gameInputs.appendChild(inputGroup);
+                });
+            };
+            
+            // FUNÇÕES DE LÓGICA DO JOGO
+            const resetLetters = () => {
+                state.availableLetters = [...ALPHABET];
+                state.drawnLetters = [];
+            };
+            
+            const clearInputs = () => {
+                 document.querySelectorAll('.category-input').forEach(input => input.value = '');
+            };
+
+            const init = () => {
+                state.score = 0;
+                roundPoints = {};
+                state.categories = ['Nome', 'Cidade', 'Fruta'];
+                state.gameState = 'ready';
+                state.currentLetter = null;
+                resetLetters();
+                renderScoreboard();
+                renderCategories();
+                letterText.classList.add('hidden');
+                revealLetterBtn.classList.add('hidden');
+                letterText.textContent = '';
+                gameInputs.innerHTML = '';
+                gameControlBtn.textContent = 'Preparar Jogo';
+                gameControlBtn.disabled = false;
+                gameControlBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                stopSection.classList.add('hidden');
+            };
+
+            // MANIPULADORES DE EVENTOS
+            addCategoryForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newCategory = categoryInput.value.trim();
+                if (newCategory && !state.categories.includes(newCategory)) {
+                    state.categories.push(newCategory);
+                    renderCategories();
+                    if (state.gameState !== 'ready') {
+                        renderGameInputs();
+                    }
+                }
+                categoryInput.value = '';
+            });
+
+            categoryList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-category-btn')) {
+                    const categoryToRemove = e.target.dataset.category;
+                    state.categories = state.categories.filter(c => c !== categoryToRemove);
+                    renderCategories();
+                    if (state.gameState !== 'ready') {
+                        renderGameInputs();
+                    }
+                }
+            });
+
+            gameControlBtn.addEventListener('click', () => {
+                if (state.gameState === 'ready') {
+                    renderGameInputs();
+                    gameControlBtn.textContent = 'Sortear Letra';
+                    state.gameState = 'prepared';
+                    return;
+                }
+
+                if (state.gameState === 'prepared' || state.gameState === 'scoring') {
+                     roundPoints = {}; // Zera os pontos da rodada anterior
+                    if (state.availableLetters.length === 0) {
+                        letterText.textContent = 'Fim!';
+                        letterText.classList.remove('hidden', 'text-yellow-400', 'text-8xl', 'md:text-9xl');
+                        letterText.classList.add('text-2xl', 'text-red-400');
+                        revealLetterBtn.classList.add('hidden');
+                        gameControlBtn.disabled = true;
+                        gameControlBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        gameInputs.innerHTML = '';
+                        stopSection.classList.add('hidden');
+                        return;
+                    }
+
+                    const randomIndex = Math.floor(Math.random() * state.availableLetters.length);
+                    const letter = state.availableLetters[randomIndex];
+                    state.drawnLetters.push(letter);
+                    state.availableLetters.splice(randomIndex, 1);
+                    state.currentLetter = letter;
+                    
+                    letterText.classList.add('hidden');
+                    revealLetterBtn.classList.remove('hidden');
+
+                    clearInputs();
+                    document.querySelectorAll('.category-input').forEach(input => input.disabled = false);
+                    document.querySelectorAll('.score-buttons-container').forEach(c => c.classList.add('hidden'));
+
+                    // **NOVO:** Remove o feedback visual dos botões de pontuação da rodada anterior
+                    document.querySelectorAll('.score-word-btn').forEach(btn => {
+                        btn.classList.remove('active', 'ring-2', 'ring-yellow-400');
+                    });
+
+                    stopSection.classList.remove('hidden');
+                    gameControlBtn.disabled = true;
+                    gameControlBtn.classList.add('opacity-50');
+                    state.gameState = 'playing';
+                }
+            });
+            
+            revealLetterBtn.addEventListener('click', () => {
+                revealLetterBtn.classList.add('hidden');
+                letterText.textContent = state.currentLetter;
+                letterText.classList.remove('hidden', 'text-2xl', 'text-red-400');
+                letterText.classList.add('text-8xl', 'md:text-9xl', 'text-yellow-400', 'animate-pop-in');
+                setTimeout(() => letterText.classList.remove('animate-pop-in'), 500);
+            });
+
+            stopBtn.addEventListener('click', () => {
+                state.gameState = 'scoring';
+                stopSection.classList.add('hidden');
+                gameControlBtn.textContent = 'Próxima Letra';
+                gameControlBtn.disabled = false;
+                gameControlBtn.classList.remove('opacity-50');
+                
+                // Inicializa os pontos da rodada como 0
+                state.categories.forEach(cat => { roundPoints[cat] = 0; });
+                
+                document.querySelectorAll('.category-input').forEach(input => input.disabled = true);
+                document.querySelectorAll('.score-buttons-container').forEach(container => {
+                    container.classList.remove('hidden');
+                });
+            });
+
+            gameInputs.addEventListener('click', e => {
+                const button = e.target.closest('.score-word-btn');
+                if(button) {
+                    const container = button.closest('[data-category]');
+                    const category = container.dataset.category;
+                    const newPoints = parseInt(button.dataset.points, 10);
+                    
+                    const oldPoints = roundPoints[category] || 0;
+                    
+                    if (button.classList.contains('active')) {
+                        state.score -= oldPoints;
+                        roundPoints[category] = 0;
+                        button.classList.remove('active', 'ring-2', 'ring-yellow-400');
+                    } else {
+                        state.score += (newPoints - oldPoints);
+                        roundPoints[category] = newPoints;
+                        container.querySelectorAll('.score-word-btn').forEach(btn => btn.classList.remove('active', 'ring-2', 'ring-yellow-400'));
+                        button.classList.add('active', 'ring-2', 'ring-yellow-400');
+                    }
+                    renderScoreboard();
+                }
+            });
+            
+            resetBtn.addEventListener('click', init);
+
+            // INICIALIZAÇÃO
+            init();
+        });
+    </script>
+</body>
+</html>
+
